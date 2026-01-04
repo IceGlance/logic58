@@ -1,8 +1,9 @@
+<!-- Mobile QA checklist: verify no horizontal scroll at 390x844, 360x740, 844x390; current row + palette usable; submit visible; history accessible. -->
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Logic — Board Interface</title>
     <style>
       :root {
@@ -10,6 +11,15 @@
         font-family: "Trebuchet MS", "Segoe UI", Tahoma, sans-serif;
         background-color: #e6dcc2;
         color: #3d3526;
+        --safe-left: env(safe-area-inset-left);
+        --safe-right: env(safe-area-inset-right);
+        --safe-top: env(safe-area-inset-top);
+        --safe-bottom: env(safe-area-inset-bottom);
+        --socket-size: 58px;
+        --socket-gap: 12px;
+        --feedback-size: 18px;
+        --feedback-gap: 6px;
+        --peg-size: 42px;
       }
 
       * {
@@ -18,13 +28,16 @@
 
       body {
         margin: 0;
-        padding: 24px;
+        padding: calc(24px + var(--safe-top)) calc(24px + var(--safe-right))
+          calc(24px + var(--safe-bottom)) calc(24px + var(--safe-left));
         background: radial-gradient(circle at top, #efe5c8 0%, #e3d4b3 60%, #d8c6a1 100%);
       }
 
       .game-shell {
         display: flex;
         justify-content: center;
+        max-width: 100vw;
+        overflow-x: hidden;
       }
 
       .board-frame {
@@ -34,7 +47,8 @@
         box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.8),
           inset 0 -6px 12px rgba(117, 96, 62, 0.35),
           0 24px 40px rgba(72, 56, 32, 0.25);
-        overflow-x: auto;
+        max-width: 100vw;
+        overflow-x: hidden;
       }
 
       .board {
@@ -47,6 +61,11 @@
         border-radius: 24px;
         box-shadow: inset 0 0 0 2px rgba(108, 84, 47, 0.25),
           inset 0 20px 30px rgba(255, 255, 255, 0.3);
+      }
+
+      .board-playfield {
+        transform: scale(var(--board-scale, 1));
+        transform-origin: top center;
       }
 
       .secret-row {
@@ -70,7 +89,7 @@
 
       .secret-sockets {
         display: grid;
-        grid-template-columns: repeat(5, 64px);
+        grid-template-columns: repeat(5, calc(var(--socket-size) + 6px));
         gap: 14px;
       }
 
@@ -119,15 +138,15 @@
 
       .guess-sockets {
         display: grid;
-        grid-template-columns: repeat(5, 58px);
-        gap: 12px;
+        grid-template-columns: repeat(5, var(--socket-size));
+        gap: var(--socket-gap);
       }
 
       .feedback-sockets {
         display: grid;
-        grid-template-columns: repeat(3, 18px);
-        grid-template-rows: repeat(2, 18px);
-        gap: 6px;
+        grid-template-columns: repeat(3, var(--feedback-size));
+        grid-template-rows: repeat(2, var(--feedback-size));
+        gap: var(--feedback-gap);
         justify-content: center;
       }
 
@@ -164,13 +183,13 @@
       }
 
       .socket.large {
-        width: 58px;
-        height: 58px;
+        width: var(--socket-size);
+        height: var(--socket-size);
       }
 
       .socket.small {
-        width: 18px;
-        height: 18px;
+        width: var(--feedback-size);
+        height: var(--feedback-size);
       }
 
       .socket.interactive {
@@ -182,6 +201,12 @@
         outline-offset: 3px;
       }
 
+      .socket.interactive.ready {
+        box-shadow: 0 0 0 3px rgba(127, 92, 45, 0.4),
+          inset 2px 2px 4px rgba(255, 255, 255, 0.6),
+          inset -4px -4px 6px rgba(90, 67, 36, 0.45);
+      }
+
       .peg {
         border-radius: 50%;
         box-shadow: inset -2px -2px 4px rgba(0, 0, 0, 0.3),
@@ -189,13 +214,13 @@
       }
 
       .peg.large {
-        width: 42px;
-        height: 42px;
+        width: var(--peg-size);
+        height: var(--peg-size);
       }
 
       .peg.small {
-        width: 12px;
-        height: 12px;
+        width: calc(var(--feedback-size) - 6px);
+        height: calc(var(--feedback-size) - 6px);
         border: 1px solid rgba(0, 0, 0, 0.2);
       }
 
@@ -323,13 +348,90 @@
           min-width: 820px;
         }
       }
+
+      @media (max-width: 768px) {
+        body {
+          padding: calc(16px + var(--safe-top)) calc(16px + var(--safe-right))
+            calc(16px + var(--safe-bottom)) calc(16px + var(--safe-left));
+        }
+
+        .board {
+          min-width: 0;
+          grid-template-columns: 1fr;
+          gap: 20px;
+        }
+
+        .controls-panel {
+          order: 2;
+        }
+
+        .board-playfield {
+          order: 1;
+        }
+      }
+
+      @media (max-width: 480px) {
+        :root {
+          --socket-size: 48px;
+          --socket-gap: 10px;
+          --feedback-size: 16px;
+          --feedback-gap: 6px;
+          --peg-size: 34px;
+        }
+
+        .board-frame {
+          padding: 16px;
+        }
+
+        .attempts-area {
+          grid-template-columns: 1fr;
+        }
+
+        .attempt-row {
+          grid-template-columns: 1fr;
+          gap: 10px;
+        }
+
+        .feedback-sockets {
+          justify-content: flex-start;
+        }
+
+        .row-numbers {
+          display: none;
+        }
+
+        .board-controls button {
+          width: 100%;
+        }
+      }
+
+      .condensed .attempt-row {
+        padding: 8px 12px;
+      }
+
+      .condensed .attempt-row:not(.current) {
+        --socket-size: 34px;
+        --socket-gap: 8px;
+        --feedback-size: 12px;
+        --feedback-gap: 4px;
+        --peg-size: 24px;
+        opacity: 0.9;
+      }
+
+      .condensed .attempt-row.current {
+        --socket-size: 50px;
+        --socket-gap: 10px;
+        --feedback-size: 16px;
+        --feedback-gap: 6px;
+        --peg-size: 36px;
+      }
     </style>
   </head>
   <body>
     <main class="game-shell">
       <section class="board-frame" aria-label="Logic board">
         <div class="board">
-          <div>
+          <div class="board-playfield" id="board-playfield">
             <div class="secret-row" id="secret-row">
               <div class="secret-label">Secret Code</div>
               <div class="secret-sockets" id="secret-sockets"></div>
@@ -406,6 +508,8 @@
       const newGameBtn = document.getElementById("new-game");
       const rowNumbersEl = document.getElementById("row-numbers");
       const statusLiveEl = document.getElementById("status-live");
+      const boardPlayfieldEl = document.getElementById("board-playfield");
+      const boardFrameEl = document.querySelector(".board-frame");
 
       function generateSecretCode() {
         // Random code generation with repeats allowed.
@@ -490,6 +594,9 @@
         socket.setAttribute("aria-label", label);
         if (interactive) {
           socket.classList.add("interactive");
+          if (selectedColorId !== null) {
+            socket.classList.add("ready");
+          }
           socket.setAttribute("role", "button");
           socket.tabIndex = 0;
         }
@@ -539,6 +646,7 @@
       function renderAttempts() {
         attemptRowsEl.innerHTML = "";
         const currentRowIndex = state.attempts.length;
+        const allowDrag = !isTouchLayout();
 
         for (let rowIndex = 0; rowIndex < MAX_ATTEMPTS; rowIndex += 1) {
           const row = document.createElement("div");
@@ -575,20 +683,22 @@
                   handleSocketPlacement(position);
                 }
               });
-              socket.addEventListener("dragover", (event) => {
-                event.preventDefault();
-              });
-              socket.addEventListener("drop", (event) => {
-                event.preventDefault();
-                const colorIdText = event.dataTransfer.getData("text/plain");
-                if (colorIdText !== "") {
-                  selectedColorId = Number(colorIdText);
-                  state.currentGuess[position] = selectedColorId;
-                  renderPalette();
-                  renderAttempts();
-                  updateStatus();
-                }
-              });
+              if (allowDrag) {
+                socket.addEventListener("dragover", (event) => {
+                  event.preventDefault();
+                });
+                socket.addEventListener("drop", (event) => {
+                  event.preventDefault();
+                  const colorIdText = event.dataTransfer.getData("text/plain");
+                  if (colorIdText !== "") {
+                    selectedColorId = Number(colorIdText);
+                    state.currentGuess[position] = selectedColorId;
+                    renderPalette();
+                    renderAttempts();
+                    updateStatus();
+                  }
+                });
+              }
             }
 
             guessSockets.appendChild(socket);
@@ -632,6 +742,7 @@
 
       function renderPalette() {
         paletteEl.innerHTML = "";
+        const allowDrag = !isTouchLayout();
         COLORS.forEach((color) => {
           const button = document.createElement("button");
           button.type = "button";
@@ -639,7 +750,7 @@
           button.setAttribute("aria-label", color.name);
           button.title = color.name;
           button.disabled = state.status !== "playing";
-          button.draggable = state.status === "playing";
+          button.draggable = state.status === "playing" && allowDrag;
           if (selectedColorId === color.id) {
             button.classList.add("selected");
           }
@@ -657,7 +768,9 @@
           });
 
           button.addEventListener("dragstart", (event) => {
-            event.dataTransfer.setData("text/plain", color.id.toString());
+            if (allowDrag) {
+              event.dataTransfer.setData("text/plain", color.id.toString());
+            }
           });
 
           paletteEl.appendChild(button);
@@ -728,13 +841,47 @@
         updateStatus();
       }
 
+      function isTouchLayout() {
+        return (
+          window.matchMedia("(pointer: coarse)").matches ||
+          window.matchMedia("(max-width: 768px)").matches
+        );
+      }
+
+      function updateResponsiveLayout() {
+        const availableWidth = boardFrameEl.clientWidth - 16;
+        const playfieldWidth = boardPlayfieldEl.scrollWidth;
+        const scale = Math.min(1, availableWidth / playfieldWidth);
+        document.documentElement.style.setProperty("--board-scale", scale.toFixed(3));
+
+        const minTapTarget = 40;
+        const socketBaseSize = parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue("--socket-size")
+        );
+        const effectiveSize = socketBaseSize * scale;
+        const shouldCondense = effectiveSize < minTapTarget;
+        const hadCondensed = document.body.classList.contains("condensed");
+        document.body.classList.toggle("condensed", shouldCondense);
+
+        if (shouldCondense !== hadCondensed) {
+          requestAnimationFrame(updateResponsiveLayout);
+          return;
+        }
+
+        renderAttempts();
+        renderPalette();
+      }
+
       submitBtn.addEventListener("click", submitGuess);
       clearBtn.addEventListener("click", clearGuess);
       newGameBtn.addEventListener("click", startNewGame);
+      window.addEventListener("resize", updateResponsiveLayout);
+      window.addEventListener("orientationchange", updateResponsiveLayout);
 
       runFeedbackTests();
       renderRowNumbers();
       startNewGame();
+      updateResponsiveLayout();
     </script>
   </body>
 </html>
