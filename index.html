@@ -418,35 +418,56 @@
         padding-right: 4px;
       }
 
-      .mobile-history-row {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        gap: 12px;
+      .mobile-layout {
+        --mh-token: 34px;
+        --mh-gap: 8px;
+      }
+
+      .m-history__row {
+        display: flex;
+        flex-wrap: wrap;
         align-items: center;
+        justify-content: space-between;
+        gap: 12px;
         padding: 10px 12px;
         border-radius: 16px;
         background: rgba(255, 255, 255, 0.35);
         box-shadow: inset 0 1px 3px rgba(94, 73, 43, 0.2);
+        max-width: 100%;
       }
 
-      .mobile-history-guess {
-        display: grid;
-        grid-template-columns: repeat(5, 28px);
-        gap: 6px;
+      .m-history__guess {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: var(--mh-gap);
+        align-items: center;
+        flex: 1 1 auto;
+        min-width: 0;
       }
 
-      .mobile-history-guess .socket {
-        width: 28px;
-        height: 28px;
+      /* History tokens intentionally avoid socket styling for readability. */
+      .m-history__token {
+        width: var(--mh-token);
+        height: var(--mh-token);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.4);
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        box-shadow: 0 1px 2px rgba(58, 44, 24, 0.2);
+        flex: 0 0 auto;
       }
 
-      .mobile-history-feedback {
+      .m-history__token--empty {
+        background: rgba(255, 255, 255, 0.5);
+      }
+
+      .m-history__feedback {
         display: grid;
         grid-template-columns: repeat(2, 12px);
         gap: 4px;
+        flex: 0 0 auto;
       }
 
-      .mobile-history-feedback .socket {
+      .m-history__feedback .socket {
         width: 12px;
         height: 12px;
       }
@@ -614,6 +635,17 @@
 
         .board-controls button {
           width: 100%;
+        }
+      }
+
+      @media (max-width: 360px) {
+        .mobile-layout {
+          --mh-token: 30px;
+          --mh-gap: 6px;
+        }
+
+        .m-history__guess {
+          flex-wrap: wrap;
         }
       }
 
@@ -1077,23 +1109,27 @@
 
         state.attempts.forEach((attempt, index) => {
           const row = document.createElement("div");
-          row.className = "mobile-history-row";
+          row.className = "m-history__row";
 
           const guess = document.createElement("div");
-          guess.className = "mobile-history-guess";
+          guess.className = "m-history__guess";
           attempt.guess.forEach((colorId, position) => {
-            const socket = createSocket(
-              "small",
-              `Attempt ${index + 1}, position ${position + 1} socket`
+            const token = document.createElement("div");
+            token.className = "m-history__token";
+            token.setAttribute(
+              "aria-label",
+              `Attempt ${index + 1}, position ${position + 1} token`
             );
             if (colorId !== null) {
-              socket.appendChild(createPeg(COLORS[colorId].hex, "small"));
+              token.style.backgroundColor = COLORS[colorId].hex;
+            } else {
+              token.classList.add("m-history__token--empty");
             }
-            guess.appendChild(socket);
+            guess.appendChild(token);
           });
 
           const feedback = document.createElement("div");
-          feedback.className = "mobile-history-feedback";
+          feedback.className = "m-history__feedback";
           const feedbackPegs = [
             ...Array(attempt.black).fill("black"),
             ...Array(attempt.white).fill("white"),
