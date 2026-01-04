@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Logic — Mastermind-like Game</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f5f5f7;
+        color: #1f2933;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 24px;
+      }
+
+      header {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+
+      header h1 {
+        margin: 0;
+        font-size: 2rem;
+      }
+
+      .status-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .status-pill {
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: #e2e8f0;
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+
+      .board {
+        display: grid;
+        grid-template-columns: minmax(240px, 1fr);
+        gap: 20px;
+      }
+
+      @media (min-width: 900px) {
+        .board {
+          grid-template-columns: minmax(320px, 1.2fr) minmax(280px, 0.8fr);
+        }
+      }
+
+      .panel {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+      }
+
+      .history-list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .history-row {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 12px;
+        align-items: center;
+        padding: 10px 12px;
+        background: #f8fafc;
+        border-radius: 12px;
+      }
+
+      .token-row {
+        display: flex;
+        gap: 8px;
+      }
+
+      .token {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        border: 2px solid rgba(15, 23, 42, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        color: #111827;
+        font-weight: 700;
+      }
+
+      .feedback {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 0.85rem;
+      }
+
+      .peg-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 14px);
+        gap: 4px;
+      }
+
+      .peg {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 1px solid #cbd5f5;
+        background: #e2e8f0;
+      }
+
+      .peg.black {
+        background: #111827;
+        border-color: #111827;
+      }
+
+      .peg.white {
+        background: #ffffff;
+        border-color: #94a3b8;
+      }
+
+      .secret {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .secret.hidden .token {
+        background: #cbd5f5 !important;
+        color: transparent;
+      }
+
+      .guess-editor {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .slots {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .slot {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        border: 2px dashed #cbd5f5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: #334155;
+        background: #f8fafc;
+      }
+
+      .palette {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(48px, 1fr));
+        gap: 10px;
+      }
+
+      .palette button {
+        border: none;
+        border-radius: 12px;
+        padding: 10px;
+        cursor: pointer;
+        background: #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: #0f172a;
+      }
+
+      .palette button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      button.action {
+        padding: 10px 16px;
+        border-radius: 12px;
+        border: none;
+        cursor: pointer;
+        background: #2563eb;
+        color: #ffffff;
+        font-weight: 600;
+      }
+
+      button.secondary {
+        background: #e2e8f0;
+        color: #1f2937;
+      }
+
+      button.action:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .how-to-play {
+        margin-top: 20px;
+        font-size: 0.95rem;
+        color: #475569;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Logic — Mastermind-like Game</h1>
+      <div class="status-bar">
+        <span class="status-pill" id="attempt-counter">Attempt 1 / 12</span>
+        <span class="status-pill" id="game-status">Status: Playing</span>
+        <button class="action secondary" id="new-game">New Game</button>
+      </div>
+    </header>
+
+    <main class="board">
+      <section class="panel">
+        <h2>Attempts</h2>
+        <div class="history-list" id="history"></div>
+      </section>
+
+      <section class="panel guess-editor">
+        <div>
+          <h2>Secret Code</h2>
+          <div class="secret hidden" id="secret-code"></div>
+        </div>
+
+        <div>
+          <h2>Current Guess</h2>
+          <div class="slots" id="slots"></div>
+        </div>
+
+        <div>
+          <h2>Color Palette</h2>
+          <div class="palette" id="palette"></div>
+        </div>
+
+        <div class="controls">
+          <button class="action" id="submit-guess" disabled>Submit Guess</button>
+          <button class="action secondary" id="clear-guess">Clear Guess</button>
+          <button class="action secondary" id="reveal-code">Reveal (after game)</button>
+        </div>
+
+        <div class="how-to-play">
+          <h3>How to play</h3>
+          <ul>
+            <li>Fill 5 slots using 8 colors; repeats are allowed and no blanks are permitted.</li>
+            <li>You have 12 attempts to crack the code.</li>
+            <li>Black peg = correct color in the correct position.</li>
+            <li>White peg = correct color in the wrong position.</li>
+            <li>Win by scoring 5 black pegs.</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const COLORS = [
+        { id: 0, name: "Color 1", hex: "#ef4444" },
+        { id: 1, name: "Color 2", hex: "#f97316" },
+        { id: 2, name: "Color 3", hex: "#facc15" },
+        { id: 3, name: "Color 4", hex: "#22c55e" },
+        { id: 4, name: "Color 5", hex: "#14b8a6" },
+        { id: 5, name: "Color 6", hex: "#3b82f6" },
+        { id: 6, name: "Color 7", hex: "#8b5cf6" },
+        { id: 7, name: "Color 8", hex: "#ec4899" },
+      ];
+
+      const MAX_ATTEMPTS = 12;
+      const CODE_LENGTH = 5;
+
+      const state = {
+        secretCode: [],
+        attempts: [],
+        currentGuess: Array(CODE_LENGTH).fill(null),
+        status: "playing",
+      };
+
+      const historyEl = document.getElementById("history");
+      const slotsEl = document.getElementById("slots");
+      const paletteEl = document.getElementById("palette");
+      const secretEl = document.getElementById("secret-code");
+      const attemptCounterEl = document.getElementById("attempt-counter");
+      const statusEl = document.getElementById("game-status");
+      const submitBtn = document.getElementById("submit-guess");
+      const clearBtn = document.getElementById("clear-guess");
+      const newGameBtn = document.getElementById("new-game");
+      const revealBtn = document.getElementById("reveal-code");
+
+      function generateSecretCode() {
+        // Random code generation with repeats allowed.
+        return Array.from({ length: CODE_LENGTH }, () =>
+          Math.floor(Math.random() * COLORS.length)
+        );
+      }
+
+      function evaluateGuess(code, guess) {
+        // Feedback algorithm with duplicate handling:
+        // First count black pegs and mark used positions,
+        // then count whites using remaining occurrences in the code.
+        let black = 0;
+        const codeUsed = Array(CODE_LENGTH).fill(false);
+        const guessUsed = Array(CODE_LENGTH).fill(false);
+
+        for (let i = 0; i < CODE_LENGTH; i += 1) {
+          if (code[i] === guess[i]) {
+            black += 1;
+            codeUsed[i] = true;
+            guessUsed[i] = true;
+          }
+        }
+
+        const remainingCounts = Array(COLORS.length).fill(0);
+        for (let i = 0; i < CODE_LENGTH; i += 1) {
+          if (!codeUsed[i]) {
+            remainingCounts[code[i]] += 1;
+          }
+        }
+
+        let white = 0;
+        for (let i = 0; i < CODE_LENGTH; i += 1) {
+          if (guessUsed[i]) {
+            continue;
+          }
+          const color = guess[i];
+          if (remainingCounts[color] > 0) {
+            white += 1;
+            remainingCounts[color] -= 1;
+          }
+        }
+
+        return { black, white };
+      }
+
+      function runFeedbackTests() {
+        // Test cases for feedback correctness, including duplicates.
+        console.info("Running feedback tests...");
+        console.info(
+          "All correct:",
+          evaluateGuess([0, 1, 2, 3, 4], [0, 1, 2, 3, 4])
+        );
+        console.info(
+          "No matches:",
+          evaluateGuess([0, 1, 2, 3, 4], [5, 6, 7, 5, 6])
+        );
+        console.info(
+          "All misplaced:",
+          evaluateGuess([0, 1, 2, 3, 4], [1, 2, 3, 4, 0])
+        );
+        console.info(
+          "Duplicate limitation:",
+          evaluateGuess([0, 0, 1, 2, 3], [0, 0, 0, 0, 0])
+        );
+        console.info(
+          "Mixed duplicates:",
+          evaluateGuess([0, 1, 1, 2, 2], [1, 1, 0, 2, 3])
+        );
+      }
+
+      function createToken(colorId, size = 34) {
+        const color = COLORS[colorId];
+        const token = document.createElement("div");
+        token.className = "token";
+        token.style.background = color.hex;
+        token.style.width = `${size}px`;
+        token.style.height = `${size}px`;
+        token.setAttribute("aria-label", color.name);
+        token.title = color.name;
+        token.textContent = colorId + 1;
+        return token;
+      }
+
+      function renderHistory() {
+        historyEl.innerHTML = "";
+        if (state.attempts.length === 0) {
+          const empty = document.createElement("p");
+          empty.textContent = "No attempts yet. Make your first guess!";
+          historyEl.appendChild(empty);
+          return;
+        }
+
+        state.attempts.forEach((attempt, index) => {
+          const row = document.createElement("div");
+          row.className = "history-row";
+
+          const guessRow = document.createElement("div");
+          guessRow.className = "token-row";
+          attempt.guess.forEach((colorId) => {
+            guessRow.appendChild(createToken(colorId, 28));
+          });
+
+          const feedback = document.createElement("div");
+          feedback.className = "feedback";
+
+          const summary = document.createElement("div");
+          summary.textContent = `Attempt ${index + 1}: Black ${attempt.black}, White ${attempt.white}`;
+
+          const pegGrid = document.createElement("div");
+          pegGrid.className = "peg-grid";
+          const pegs = [
+            ...Array(attempt.black).fill("black"),
+            ...Array(attempt.white).fill("white"),
+            ...Array(CODE_LENGTH - attempt.black - attempt.white).fill("empty"),
+          ];
+          pegs.forEach((type) => {
+            const peg = document.createElement("div");
+            peg.className = "peg";
+            if (type === "black") {
+              peg.classList.add("black");
+            } else if (type === "white") {
+              peg.classList.add("white");
+            }
+            pegGrid.appendChild(peg);
+          });
+
+          feedback.appendChild(summary);
+          feedback.appendChild(pegGrid);
+
+          row.appendChild(guessRow);
+          row.appendChild(feedback);
+          historyEl.appendChild(row);
+        });
+      }
+
+      function renderSlots() {
+        slotsEl.innerHTML = "";
+        state.currentGuess.forEach((colorId, index) => {
+          const slot = document.createElement("div");
+          slot.className = "slot";
+          if (colorId !== null) {
+            slot.style.background = COLORS[colorId].hex;
+            slot.textContent = colorId + 1;
+          } else {
+            slot.textContent = index + 1;
+          }
+          slotsEl.appendChild(slot);
+        });
+      }
+
+      function renderPalette() {
+        paletteEl.innerHTML = "";
+        COLORS.forEach((color) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.style.background = color.hex;
+          button.textContent = color.id + 1;
+          button.setAttribute("aria-label", color.name);
+          button.title = color.name;
+          button.disabled = state.status !== "playing";
+          button.addEventListener("click", () => addColorToGuess(color.id));
+          paletteEl.appendChild(button);
+        });
+      }
+
+      function renderSecretCode() {
+        secretEl.innerHTML = "";
+        state.secretCode.forEach((colorId) => {
+          secretEl.appendChild(createToken(colorId, 30));
+        });
+        if (state.status === "playing") {
+          secretEl.classList.add("hidden");
+        } else {
+          secretEl.classList.remove("hidden");
+        }
+      }
+
+      function updateStatus() {
+        const attemptNumber = state.attempts.length + 1;
+        const attemptText =
+          state.status === "playing"
+            ? `Attempt ${attemptNumber} / ${MAX_ATTEMPTS}`
+            : `Attempts used: ${state.attempts.length} / ${MAX_ATTEMPTS}`;
+        attemptCounterEl.textContent = attemptText;
+        statusEl.textContent = `Status: ${state.status.charAt(0).toUpperCase()}${state.status.slice(1)}`;
+        submitBtn.disabled =
+          state.status !== "playing" || state.currentGuess.some((slot) => slot === null);
+        clearBtn.disabled = state.status !== "playing";
+        revealBtn.disabled = state.status === "playing";
+      }
+
+      function addColorToGuess(colorId) {
+        if (state.status !== "playing") {
+          return;
+        }
+        const nextIndex = state.currentGuess.findIndex((slot) => slot === null);
+        if (nextIndex === -1) {
+          return;
+        }
+        state.currentGuess[nextIndex] = colorId;
+        renderSlots();
+        updateStatus();
+      }
+
+      function clearGuess() {
+        state.currentGuess = Array(CODE_LENGTH).fill(null);
+        renderSlots();
+        updateStatus();
+      }
+
+      function submitGuess() {
+        if (state.status !== "playing") {
+          return;
+        }
+        if (state.currentGuess.some((slot) => slot === null)) {
+          return;
+        }
+
+        const guess = state.currentGuess.slice();
+        const result = evaluateGuess(state.secretCode, guess);
+        state.attempts.push({ guess, black: result.black, white: result.white });
+
+        if (result.black === CODE_LENGTH) {
+          state.status = "won";
+        } else if (state.attempts.length >= MAX_ATTEMPTS) {
+          state.status = "lost";
+        }
+
+        state.currentGuess = Array(CODE_LENGTH).fill(null);
+        renderHistory();
+        renderSlots();
+        renderSecretCode();
+        renderPalette();
+        updateStatus();
+      }
+
+      function startNewGame() {
+        // State handling for a new game.
+        state.secretCode = generateSecretCode();
+        state.attempts = [];
+        state.currentGuess = Array(CODE_LENGTH).fill(null);
+        state.status = "playing";
+        renderHistory();
+        renderSlots();
+        renderPalette();
+        renderSecretCode();
+        updateStatus();
+      }
+
+      function revealCode() {
+        if (state.status === "playing") {
+          return;
+        }
+        renderSecretCode();
+      }
+
+      submitBtn.addEventListener("click", submitGuess);
+      clearBtn.addEventListener("click", clearGuess);
+      newGameBtn.addEventListener("click", startNewGame);
+      revealBtn.addEventListener("click", revealCode);
+
+      runFeedbackTests();
+      startNewGame();
+    </script>
+  </body>
+</html>
