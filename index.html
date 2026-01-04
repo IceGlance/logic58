@@ -416,10 +416,10 @@
 
       .mobile-history-list {
         display: grid;
-        gap: 12px;
+        gap: 8px;
         max-height: 400px;
         overflow-y: auto;
-        padding-right: 4px;
+        padding-right: 2px;
       }
 
       .mobile-layout {
@@ -432,8 +432,8 @@
         flex-wrap: wrap;
         align-items: center;
         justify-content: space-between;
-        gap: 12px;
-        padding: 10px 12px;
+        gap: 8px;
+        padding: 6px 10px;
         border-radius: 16px;
         background: rgba(255, 255, 255, 0.35);
         box-shadow: inset 0 1px 3px rgba(94, 73, 43, 0.2);
@@ -465,15 +465,28 @@
       }
 
       .m-history__feedback {
-        display: grid;
-        grid-template-columns: repeat(2, 12px);
+        display: flex;
+        flex-wrap: wrap;
         gap: 4px;
+        align-items: center;
         flex: 0 0 auto;
       }
 
-      .m-history__feedback .socket {
-        width: 12px;
-        height: 12px;
+      .m-history__peg {
+        width: 14px;
+        height: 14px;
+        border-radius: 999px;
+        box-shadow: inset -1px -1px 2px rgba(0, 0, 0, 0.25),
+          inset 1px 1px 2px rgba(255, 255, 255, 0.35);
+      }
+
+      .m-history__peg--black {
+        background: #1b1a17;
+      }
+
+      .m-history__peg--white {
+        background: #f7f5f0;
+        border: 1px solid rgba(0, 0, 0, 0.2);
       }
 
       .mobile-secret {
@@ -733,20 +746,17 @@
         </div>
 
         <div class="mobile-current">
-          <div class="mobile-section-title">Current Attempt</div>
           <div class="mobile-current-row" id="mobile-current-row"></div>
         </div>
 
         <div class="mobile-history">
-          <div class="mobile-section-title">Attempt History</div>
           <div class="mobile-history-list" id="mobile-history-list"></div>
         </div>
 
         <div class="mobile-sticky">
-          <div class="mobile-palette">
-            <div class="mobile-section-title">Palette</div>
-            <div class="palette palette-mobile" id="palette-mobile"></div>
-          </div>
+        <div class="mobile-palette">
+          <div class="palette palette-mobile" id="palette-mobile"></div>
+        </div>
 
           <div class="mobile-controls">
             <button id="mobile-submit-guess" disabled>Submit Guess</button>
@@ -1133,23 +1143,15 @@
           const feedbackPegs = [
             ...Array(attempt.black).fill("black"),
             ...Array(attempt.white).fill("white"),
-            ...Array(CODE_LENGTH - attempt.black - attempt.white).fill("empty"),
           ];
           feedbackPegs.forEach((type, pegIndex) => {
-            const socket = createSocket(
-              "small",
-              `Attempt ${index + 1}, feedback socket ${pegIndex + 1}`
+            const peg = document.createElement("div");
+            peg.className = `m-history__peg m-history__peg--${type}`;
+            peg.setAttribute(
+              "aria-label",
+              `Attempt ${index + 1}, ${type} feedback peg ${pegIndex + 1}`
             );
-            if (type === "black") {
-              const peg = document.createElement("div");
-              peg.className = "peg small black";
-              socket.appendChild(peg);
-            } else if (type === "white") {
-              const peg = document.createElement("div");
-              peg.className = "peg small white";
-              socket.appendChild(peg);
-            }
-            feedback.appendChild(socket);
+            feedback.appendChild(peg);
           });
 
           row.appendChild(guess);
