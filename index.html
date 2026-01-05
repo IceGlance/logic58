@@ -157,7 +157,7 @@
 
       .row-numbers {
         display: grid;
-        grid-template-rows: repeat(12, 1fr);
+        grid-template-rows: repeat(var(--max-attempts, 12), 1fr);
         gap: 12px;
         align-content: start;
         padding-top: 10px;
@@ -275,7 +275,8 @@
       .game-type-options {
         position: absolute;
         top: calc(100% + 8px);
-        left: 0;
+        right: 0;
+        left: auto;
         margin: 0;
         padding: 6px;
         list-style: none;
@@ -285,6 +286,7 @@
         box-shadow: 0 12px 20px rgba(80, 63, 34, 0.25);
         display: none;
         min-width: 220px;
+        max-width: calc(100vw - 24px);
         z-index: 20;
       }
 
@@ -374,7 +376,7 @@
         gap: 10px;
       }
 
-      .board-controls button {
+      .board-controls button:not(.icon-button) {
         padding: 12px 16px;
         border-radius: 14px;
         border: none;
@@ -441,9 +443,11 @@
       }
 
       .mobile-status-text {
-        display: grid;
-        gap: 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
         font-weight: 700;
+        white-space: nowrap;
       }
 
       .mobile-new-game {
@@ -664,6 +668,13 @@
         width: 56px;
         height: 56px;
         padding: 0;
+        border-radius: 14px;
+        border: 2px solid #5f4321;
+        background: #7f5c2d;
+        color: #fef7e6;
+        box-shadow: 0 8px 14px rgba(77, 55, 26, 0.35),
+          inset 0 2px 4px rgba(255, 255, 255, 0.35);
+        cursor: pointer;
       }
 
       .icon-button svg {
@@ -672,6 +683,12 @@
         fill: none;
         stroke: currentColor;
         stroke-width: 2.5;
+      }
+
+      .icon-button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        box-shadow: none;
       }
 
       .mobile-controls {
@@ -859,8 +876,7 @@
 
           <aside class="controls-panel">
             <div class="status-plaques">
-              <div class="plaque" id="attempt-counter">Attempt 1 / 12</div>
-              <div class="plaque" id="game-status">Status: Playing</div>
+              <div class="plaque" id="status-summary">Playing • 1 / 12</div>
             </div>
 
             <div class="game-config">
@@ -892,9 +908,10 @@
             </div>
 
             <div class="board-controls">
-              <button id="submit-guess" class="icon-button" aria-label="Submit guess" title="Submit" disabled>
+              <button id="submit-guess" class="icon-button" aria-label="Submit" title="Submit" disabled>
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <path d="M5 12l4 4L19 6" />
+                  <path d="M4 12l16-7-6 16-2-6-8-3z" />
+                  <path d="M12 12l8-7" />
                 </svg>
               </button>
               <button class="secondary" id="clear-guess">Clear Row</button>
@@ -910,11 +927,10 @@
       </section>
 
       <section class="mobile-layout" aria-label="Logic mobile board">
-        <div class="mobile-status">
-          <div class="mobile-status-text">
-            <div class="mobile-attempt" id="mobile-attempt-counter">Attempt 1 / 12</div>
-            <div class="mobile-game-status" id="mobile-game-status">Status: Playing</div>
-          </div>
+          <div class="mobile-status">
+            <div class="mobile-status-text">
+              <div class="mobile-status-summary" id="mobile-status-summary">Playing • 1 / 12</div>
+            </div>
           <div class="mobile-controls-row">
             <button class="mobile-new-game" id="mobile-new-game">New Game</button>
             <div class="game-type-picker" id="mobile-game-type-picker">
@@ -961,12 +977,13 @@
               <button
                 id="mobile-submit-guess"
                 class="icon-button"
-                aria-label="Submit guess"
+                aria-label="Submit"
                 title="Submit"
                 disabled
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <path d="M5 12l4 4L19 6" />
+                  <path d="M4 12l16-7-6 16-2-6-8-3z" />
+                  <path d="M12 12l8-7" />
                 </svg>
               </button>
             </div>
@@ -998,13 +1015,40 @@
       ];
 
       const GAME_TYPES = [
-        { id: "L4_C6_R0", label: "4 / 6 — No repeats", codeLength: 4, paletteSize: 6, repeatsAllowed: false },
-        { id: "L4_C6_R1", label: "4 / 6 — Repeats allowed", codeLength: 4, paletteSize: 6, repeatsAllowed: true },
-        { id: "L5_C8_R0", label: "5 / 8 — No repeats", codeLength: 5, paletteSize: 8, repeatsAllowed: false },
-        { id: "L5_C8_R1", label: "5 / 8 — Repeats allowed", codeLength: 5, paletteSize: 8, repeatsAllowed: true },
+        {
+          id: "L4_C6_R0",
+          label: "4 / 6 — No repeats",
+          codeLength: 4,
+          paletteSize: 6,
+          repeatsAllowed: false,
+          maxAttempts: 6,
+        },
+        {
+          id: "L4_C6_R1",
+          label: "4 / 6 — Repeats allowed",
+          codeLength: 4,
+          paletteSize: 6,
+          repeatsAllowed: true,
+          maxAttempts: 6,
+        },
+        {
+          id: "L5_C8_R0",
+          label: "5 / 8 — No repeats",
+          codeLength: 5,
+          paletteSize: 8,
+          repeatsAllowed: false,
+          maxAttempts: 12,
+        },
+        {
+          id: "L5_C8_R1",
+          label: "5 / 8 — Repeats allowed",
+          codeLength: 5,
+          paletteSize: 8,
+          repeatsAllowed: true,
+          maxAttempts: 12,
+        },
       ];
 
-      const MAX_ATTEMPTS = 12;
       const MOBILE_BREAKPOINT = 768;
       const DEBUG_UI = window.location.search.includes("debug=1");
       const GAME_TYPE_STORAGE_KEY = "logic.gameType";
@@ -1026,8 +1070,7 @@
       const paletteMobileEl = document.getElementById("palette-mobile");
       const secretSocketsEl = document.getElementById("secret-sockets");
       const secretRowEl = document.getElementById("secret-row");
-      const attemptCounterEl = document.getElementById("attempt-counter");
-      const statusEl = document.getElementById("game-status");
+      const statusSummaryEl = document.getElementById("status-summary");
       const submitBtn = document.getElementById("submit-guess");
       const clearBtn = document.getElementById("clear-guess");
       const newGameBtn = document.getElementById("new-game");
@@ -1035,8 +1078,7 @@
       const gameTypeTriggerEl = document.getElementById("game-type-trigger");
       const gameTypeTriggerLabelEl = document.getElementById("game-type-trigger-label");
       const gameTypeOptionsEl = document.getElementById("game-type-options");
-      const mobileAttemptCounterEl = document.getElementById("mobile-attempt-counter");
-      const mobileStatusEl = document.getElementById("mobile-game-status");
+      const mobileStatusSummaryEl = document.getElementById("mobile-status-summary");
       const mobileNewGameBtn = document.getElementById("mobile-new-game");
       const mobileGameTypePickerEl = document.getElementById("mobile-game-type-picker");
       const mobileGameTypeTriggerEl = document.getElementById("mobile-game-type-trigger");
@@ -1157,6 +1199,7 @@
         document.documentElement.style.setProperty("--feedback-rows", feedbackRows);
         const paletteColumns = activeGameType.paletteSize === 6 ? 3 : 4;
         document.documentElement.style.setProperty("--palette-columns", paletteColumns);
+        document.documentElement.style.setProperty("--max-attempts", activeGameType.maxAttempts);
       }
 
       const gameTypePickers = [
@@ -1226,6 +1269,7 @@
         }
         activeGameType = nextType;
         updateLayoutVariables();
+        renderRowNumbers();
         syncGameTypePickers(gameTypeId);
         if (persist) {
           localStorage.setItem(GAME_TYPE_STORAGE_KEY, gameTypeId);
@@ -1335,7 +1379,7 @@
 
       function renderRowNumbers() {
         rowNumbersEl.innerHTML = "";
-        for (let i = 1; i <= MAX_ATTEMPTS; i += 1) {
+        for (let i = 1; i <= activeGameType.maxAttempts; i += 1) {
           const number = document.createElement("div");
           number.className = "row-number";
           number.textContent = i;
@@ -1379,7 +1423,7 @@
         const currentRowIndex = state.attempts.length;
         const allowDrag = !isTouchLayout();
 
-        for (let rowIndex = 0; rowIndex < MAX_ATTEMPTS; rowIndex += 1) {
+        for (let rowIndex = 0; rowIndex < activeGameType.maxAttempts; rowIndex += 1) {
           const row = document.createElement("div");
           row.className = "attempt-row";
           if (state.status === "playing" && rowIndex === currentRowIndex) {
@@ -1629,15 +1673,12 @@
       }
 
       function updateStatus() {
-        const attemptNumber = state.attempts.length + 1;
-        const attemptText =
-          state.status === "playing"
-            ? `Attempt ${attemptNumber} / ${MAX_ATTEMPTS}`
-            : `Attempts used: ${state.attempts.length} / ${MAX_ATTEMPTS}`;
-        attemptCounterEl.textContent = attemptText;
-        statusEl.textContent = `Status: ${state.status.charAt(0).toUpperCase()}${state.status.slice(1)}`;
-        mobileAttemptCounterEl.textContent = attemptText;
-        mobileStatusEl.textContent = `Status: ${state.status.charAt(0).toUpperCase()}${state.status.slice(1)}`;
+        const attemptNumber =
+          state.status === "playing" ? state.attempts.length + 1 : state.attempts.length;
+        const statusLabel = `${state.status.charAt(0).toUpperCase()}${state.status.slice(1)}`;
+        const summaryText = `${statusLabel} • ${attemptNumber} / ${activeGameType.maxAttempts}`;
+        statusSummaryEl.textContent = summaryText;
+        mobileStatusSummaryEl.textContent = summaryText;
         submitBtn.disabled =
           state.status !== "playing" || state.currentGuess.some((slot) => slot === null);
         clearBtn.disabled = state.status !== "playing";
@@ -1672,7 +1713,7 @@
 
         if (result.black === activeGameType.codeLength) {
           state.status = "won";
-        } else if (state.attempts.length >= MAX_ATTEMPTS) {
+        } else if (state.attempts.length >= activeGameType.maxAttempts) {
           state.status = "lost";
         }
 
