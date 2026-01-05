@@ -893,7 +893,7 @@
                   aria-haspopup="listbox"
                   aria-expanded="false"
                 >
-                  <span id="game-type-trigger-label">On (repeats allowed)</span>
+                  <span id="game-type-trigger-label">On</span>
                 </button>
                 <ul
                   class="game-type-options"
@@ -944,7 +944,7 @@
                 aria-haspopup="listbox"
                 aria-expanded="false"
               >
-                <span id="mobile-game-type-trigger-label">On (repeats allowed)</span>
+                <span id="mobile-game-type-trigger-label">On</span>
               </button>
               <ul
                 class="game-type-options"
@@ -1218,7 +1218,7 @@
       ];
 
       function formatCompactGameTypeLabel(type) {
-        return type.repeatsAllowed ? "On (repeats allowed)" : "Off (no repeats)";
+        return type.repeatsAllowed ? "On" : "Off";
       }
 
       function setGameTypePickerOpen(picker, shouldOpen) {
