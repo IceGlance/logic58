@@ -20,6 +20,9 @@
         --feedback-size: 18px;
         --feedback-gap: 6px;
         --peg-size: 42px;
+        --code-length: 5;
+        --feedback-columns: 3;
+        --feedback-rows: 2;
       }
 
       * {
@@ -91,7 +94,7 @@
 
       .secret-sockets {
         display: grid;
-        grid-template-columns: repeat(5, calc(var(--socket-size) + 6px));
+        grid-template-columns: repeat(var(--code-length), calc(var(--socket-size) + 6px));
         gap: 14px;
       }
 
@@ -140,14 +143,14 @@
 
       .guess-sockets {
         display: grid;
-        grid-template-columns: repeat(5, var(--socket-size));
+        grid-template-columns: repeat(var(--code-length), var(--socket-size));
         gap: var(--socket-gap);
       }
 
       .feedback-sockets {
         display: grid;
-        grid-template-columns: repeat(3, var(--feedback-size));
-        grid-template-rows: repeat(2, var(--feedback-size));
+        grid-template-columns: repeat(var(--feedback-columns), var(--feedback-size));
+        grid-template-rows: repeat(var(--feedback-rows), var(--feedback-size));
         gap: var(--feedback-gap);
         justify-content: center;
       }
@@ -238,6 +241,22 @@
         display: flex;
         flex-direction: column;
         gap: 18px;
+      }
+
+      .game-config {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .game-type-select {
+        border: 1px solid rgba(90, 67, 36, 0.35);
+        border-radius: 12px;
+        padding: 10px 12px;
+        font-weight: 700;
+        background: rgba(255, 255, 255, 0.7);
+        color: #4a3b26;
       }
 
       .status-plaques {
@@ -385,6 +404,14 @@
         cursor: pointer;
       }
 
+      .mobile-controls-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        justify-content: flex-end;
+      }
+
       .mobile-section-title {
         font-weight: 700;
         text-transform: uppercase;
@@ -517,7 +544,7 @@
 
       .mobile-secret-sockets {
         display: grid;
-        grid-template-columns: repeat(5, 34px);
+        grid-template-columns: repeat(var(--code-length), 34px);
         gap: 8px;
         margin-top: 8px;
       }
@@ -550,7 +577,7 @@
 
       .mobile-action-bar {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-columns: minmax(0, 1fr) minmax(84px, 110px);
         gap: 12px;
         align-items: center;
       }
@@ -563,12 +590,17 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        min-width: 120px;
+        min-width: 84px;
+        max-width: 110px;
+        width: 100%;
       }
 
       .mobile-submit-column button {
         width: 100%;
         min-height: 44px;
+        text-transform: uppercase;
+        line-height: 1.1;
+        white-space: normal;
       }
 
       .mobile-controls {
@@ -760,6 +792,14 @@
               <div class="plaque" id="game-status">Status: Playing</div>
             </div>
 
+            <div class="game-config">
+              <button class="secondary" id="new-game">New Game</button>
+              <label>
+                <span class="sr-only">Game Type</span>
+                <select id="game-type-select" class="game-type-select"></select>
+              </label>
+            </div>
+
             <div class="tray">
               <div class="tray-label">Peg Tray</div>
               <div class="palette" id="palette-desktop"></div>
@@ -768,7 +808,6 @@
             <div class="board-controls">
               <button id="submit-guess" disabled>Submit Guess</button>
               <button class="secondary" id="clear-guess">Clear Row</button>
-              <button class="secondary" id="new-game">New Game</button>
             </div>
 
             <p class="board-hint">
@@ -786,7 +825,13 @@
             <div class="mobile-attempt" id="mobile-attempt-counter">Attempt 1 / 12</div>
             <div class="mobile-game-status" id="mobile-game-status">Status: Playing</div>
           </div>
-          <button class="mobile-new-game" id="mobile-new-game">New Game</button>
+          <div class="mobile-controls-row">
+            <button class="mobile-new-game" id="mobile-new-game">New Game</button>
+            <label>
+              <span class="sr-only">Game Type</span>
+              <select id="mobile-game-type-select" class="game-type-select"></select>
+            </label>
+          </div>
         </div>
 
         <div class="mobile-secret" id="mobile-secret">
@@ -808,7 +853,7 @@
               <div class="palette palette-mobile" id="palette-mobile"></div>
             </div>
             <div class="mobile-submit-column">
-              <button id="mobile-submit-guess" disabled>Submit Guess</button>
+              <button id="mobile-submit-guess" disabled>SUBMIT<br />GUESS</button>
             </div>
           </div>
         </div>
@@ -826,7 +871,7 @@
         - Test at 390x844, 360x740, 844x390 to ensure no horizontal scroll.
         - Verify tap-to-place works end-to-end, submit is reachable, and history scrolls.
       */
-      const COLORS = [
+      const BASE_COLORS = [
         { id: 0, name: "Color 1", hex: "#ef4444" },
         { id: 1, name: "Color 2", hex: "#f97316" },
         { id: 2, name: "Color 3", hex: "#facc15" },
@@ -837,19 +882,29 @@
         { id: 7, name: "Color 8", hex: "#ec4899" },
       ];
 
+      const GAME_TYPES = [
+        { id: "L4_C6_R0", label: "4 / 6 — No repeats", codeLength: 4, paletteSize: 6, repeatsAllowed: false },
+        { id: "L4_C6_R1", label: "4 / 6 — Repeats allowed", codeLength: 4, paletteSize: 6, repeatsAllowed: true },
+        { id: "L5_C8_R0", label: "5 / 8 — No repeats", codeLength: 5, paletteSize: 8, repeatsAllowed: false },
+        { id: "L5_C8_R1", label: "5 / 8 — Repeats allowed", codeLength: 5, paletteSize: 8, repeatsAllowed: true },
+      ];
+
       const MAX_ATTEMPTS = 12;
-      const CODE_LENGTH = 5;
       const MOBILE_BREAKPOINT = 768;
       const DEBUG_UI = window.location.search.includes("debug=1");
+      const GAME_TYPE_STORAGE_KEY = "logic.gameType";
+      const DEFAULT_GAME_TYPE_ID = "L5_C8_R1";
 
       const state = {
         secretCode: [],
         attempts: [],
-        currentGuess: Array(CODE_LENGTH).fill(null),
+        currentGuess: [],
         status: "playing",
       };
 
       let selectedColorId = null;
+      let activeGameType =
+        GAME_TYPES.find((type) => type.id === DEFAULT_GAME_TYPE_ID) || GAME_TYPES[0];
 
       const attemptRowsEl = document.getElementById("attempt-rows");
       const paletteDesktopEl = document.getElementById("palette-desktop");
@@ -861,9 +916,11 @@
       const submitBtn = document.getElementById("submit-guess");
       const clearBtn = document.getElementById("clear-guess");
       const newGameBtn = document.getElementById("new-game");
+      const gameTypeSelectEl = document.getElementById("game-type-select");
       const mobileAttemptCounterEl = document.getElementById("mobile-attempt-counter");
       const mobileStatusEl = document.getElementById("mobile-game-status");
       const mobileNewGameBtn = document.getElementById("mobile-new-game");
+      const mobileGameTypeSelectEl = document.getElementById("mobile-game-type-select");
       const mobileSubmitBtn = document.getElementById("mobile-submit-guess");
       const mobileCurrentRowEl = document.getElementById("mobile-current-row");
       const mobileHistoryListEl = document.getElementById("mobile-history-list");
@@ -875,11 +932,36 @@
       const boardFrameEl = document.querySelector(".board-frame");
       const debugIndicatorEl = document.getElementById("debug-indicator");
 
+      function getGameTypeById(gameTypeId) {
+        return GAME_TYPES.find((type) => type.id === gameTypeId) || null;
+      }
+
+      function getActiveColors() {
+        return BASE_COLORS.slice(0, activeGameType.paletteSize);
+      }
+
+      function getActiveColorIds() {
+        return getActiveColors().map((color) => color.id);
+      }
+
+      function shuffleArray(items) {
+        const copy = items.slice();
+        for (let i = copy.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [copy[i], copy[j]] = [copy[j], copy[i]];
+        }
+        return copy;
+      }
+
       function generateSecretCode() {
-        // Random code generation with repeats allowed.
-        return Array.from({ length: CODE_LENGTH }, () =>
-          Math.floor(Math.random() * COLORS.length)
-        );
+        const colorIds = getActiveColorIds();
+        const { codeLength, repeatsAllowed } = activeGameType;
+        if (repeatsAllowed) {
+          return Array.from({ length: codeLength }, () =>
+            colorIds[Math.floor(Math.random() * colorIds.length)]
+          );
+        }
+        return shuffleArray(colorIds).slice(0, codeLength);
       }
 
       function evaluateGuess(code, guess) {
@@ -887,10 +969,11 @@
         // First count black pegs and mark used positions,
         // then count whites using remaining occurrences in the code.
         let black = 0;
-        const codeUsed = Array(CODE_LENGTH).fill(false);
-        const guessUsed = Array(CODE_LENGTH).fill(false);
+        const codeLength = code.length;
+        const codeUsed = Array(codeLength).fill(false);
+        const guessUsed = Array(codeLength).fill(false);
 
-        for (let i = 0; i < CODE_LENGTH; i += 1) {
+        for (let i = 0; i < codeLength; i += 1) {
           if (code[i] === guess[i]) {
             black += 1;
             codeUsed[i] = true;
@@ -898,15 +981,15 @@
           }
         }
 
-        const remainingCounts = Array(COLORS.length).fill(0);
-        for (let i = 0; i < CODE_LENGTH; i += 1) {
+        const remainingCounts = Array(activeGameType.paletteSize).fill(0);
+        for (let i = 0; i < codeLength; i += 1) {
           if (!codeUsed[i]) {
             remainingCounts[code[i]] += 1;
           }
         }
 
         let white = 0;
-        for (let i = 0; i < CODE_LENGTH; i += 1) {
+        for (let i = 0; i < codeLength; i += 1) {
           if (guessUsed[i]) {
             continue;
           }
@@ -945,6 +1028,65 @@
         );
       }
 
+      function updateLayoutVariables() {
+        document.documentElement.style.setProperty("--code-length", activeGameType.codeLength);
+        const feedbackColumns = activeGameType.codeLength <= 4 ? 2 : 3;
+        const feedbackRows = Math.ceil(activeGameType.codeLength / feedbackColumns);
+        document.documentElement.style.setProperty("--feedback-columns", feedbackColumns);
+        document.documentElement.style.setProperty("--feedback-rows", feedbackRows);
+      }
+
+      function syncGameTypeSelects(gameTypeId) {
+        [gameTypeSelectEl, mobileGameTypeSelectEl].forEach((selectEl) => {
+          if (selectEl) {
+            selectEl.value = gameTypeId;
+          }
+        });
+      }
+
+      function applyGameType(gameTypeId, { startNewGame: shouldStartNewGame = true, persist = true } = {}) {
+        const nextType = getGameTypeById(gameTypeId);
+        if (!nextType) {
+          return;
+        }
+        activeGameType = nextType;
+        updateLayoutVariables();
+        syncGameTypeSelects(gameTypeId);
+        if (persist) {
+          localStorage.setItem(GAME_TYPE_STORAGE_KEY, gameTypeId);
+        }
+        if (shouldStartNewGame) {
+          startNewGame();
+          updateResponsiveLayout();
+        }
+      }
+
+      function buildGameTypeOptions(selectEl) {
+        if (!selectEl) {
+          return;
+        }
+        selectEl.innerHTML = "";
+        GAME_TYPES.forEach((type) => {
+          const option = document.createElement("option");
+          option.value = type.id;
+          option.textContent = type.label;
+          selectEl.appendChild(option);
+        });
+      }
+
+      function initializeGameTypes() {
+        buildGameTypeOptions(gameTypeSelectEl);
+        buildGameTypeOptions(mobileGameTypeSelectEl);
+        const storedGameTypeId = localStorage.getItem(GAME_TYPE_STORAGE_KEY);
+        const initialGameTypeId = getGameTypeById(storedGameTypeId)
+          ? storedGameTypeId
+          : DEFAULT_GAME_TYPE_ID;
+        applyGameType(initialGameTypeId, {
+          startNewGame: false,
+          persist: !getGameTypeById(storedGameTypeId),
+        });
+      }
+
       function createPeg(colorHex, sizeClass) {
         const peg = document.createElement("div");
         peg.className = `peg ${sizeClass}`;
@@ -979,11 +1121,11 @@
 
       function renderSecretCode() {
         secretSocketsEl.innerHTML = "";
-        for (let i = 0; i < CODE_LENGTH; i += 1) {
+        for (let i = 0; i < activeGameType.codeLength; i += 1) {
           const socket = createSocket("large", `Secret position ${i + 1}`);
           if (state.status !== "playing") {
             const colorId = state.secretCode[i];
-            socket.appendChild(createPeg(COLORS[colorId].hex, "large"));
+            socket.appendChild(createPeg(BASE_COLORS[colorId].hex, "large"));
           }
           secretSocketsEl.appendChild(socket);
         }
@@ -996,11 +1138,11 @@
 
       function renderMobileSecretCode() {
         mobileSecretSocketsEl.innerHTML = "";
-        for (let i = 0; i < CODE_LENGTH; i += 1) {
+        for (let i = 0; i < activeGameType.codeLength; i += 1) {
           const socket = createSocket("large", `Secret position ${i + 1}`);
           if (state.status !== "playing") {
             const colorId = state.secretCode[i];
-            socket.appendChild(createPeg(COLORS[colorId].hex, "large"));
+            socket.appendChild(createPeg(BASE_COLORS[colorId].hex, "large"));
           }
           mobileSecretSocketsEl.appendChild(socket);
         }
@@ -1022,8 +1164,21 @@
         }
       }
 
+      function isColorUsed(colorId, ignorePosition = null) {
+        return state.currentGuess.some(
+          (guessColor, index) => guessColor === colorId && index !== ignorePosition
+        );
+      }
+
       function setCurrentGuessAt(position, colorId) {
         if (state.status !== "playing") {
+          return;
+        }
+        if (
+          colorId !== null &&
+          !activeGameType.repeatsAllowed &&
+          isColorUsed(colorId, position)
+        ) {
           return;
         }
         state.currentGuess[position] = colorId;
@@ -1055,7 +1210,7 @@
           const guessSockets = document.createElement("div");
           guessSockets.className = "guess-sockets";
 
-          let guessValues = Array(CODE_LENGTH).fill(null);
+          let guessValues = Array(activeGameType.codeLength).fill(null);
           if (rowIndex < state.attempts.length) {
             guessValues = state.attempts[rowIndex].guess;
           } else if (rowIndex === currentRowIndex && state.status === "playing") {
@@ -1069,7 +1224,7 @@
             const socket = createSocket("large", label, interactive);
 
             if (colorId !== null) {
-              socket.appendChild(createPeg(COLORS[colorId].hex, "large"));
+              socket.appendChild(createPeg(BASE_COLORS[colorId].hex, "large"));
             }
 
             if (interactive) {
@@ -1089,7 +1244,7 @@
                   const colorIdText = event.dataTransfer.getData("text/plain");
                   if (colorIdText !== "") {
                     selectedColorId = Number(colorIdText);
-                    state.currentGuess[position] = selectedColorId;
+                    setCurrentGuessAt(position, selectedColorId);
                     renderAll();
                     updateStatus();
                   }
@@ -1110,7 +1265,7 @@
           const feedbackPegs = [
             ...Array(feedback.black).fill("black"),
             ...Array(feedback.white).fill("white"),
-            ...Array(CODE_LENGTH - feedback.black - feedback.white).fill("empty"),
+            ...Array(activeGameType.codeLength - feedback.black - feedback.white).fill("empty"),
           ];
 
           feedbackPegs.forEach((type, index) => {
@@ -1153,7 +1308,7 @@
           );
 
           if (colorId !== null) {
-            token.style.backgroundColor = COLORS[colorId].hex;
+            token.style.backgroundColor = BASE_COLORS[colorId].hex;
           } else {
             token.classList.add("m-history__token--empty");
           }
@@ -1210,7 +1365,7 @@
               `Attempt ${index + 1}, position ${position + 1} token`
             );
             if (colorId !== null) {
-              token.style.backgroundColor = COLORS[colorId].hex;
+              token.style.backgroundColor = BASE_COLORS[colorId].hex;
             } else {
               token.classList.add("m-history__token--empty");
             }
@@ -1242,13 +1397,15 @@
       function renderPalette(targetEl) {
         targetEl.innerHTML = "";
         const allowDrag = !isTouchLayout();
-        COLORS.forEach((color) => {
+        getActiveColors().forEach((color) => {
           const button = document.createElement("button");
           button.type = "button";
           button.className = "tray-peg";
           button.setAttribute("aria-label", color.name);
           button.title = color.name;
-          button.disabled = state.status !== "playing";
+          const colorUsed = !activeGameType.repeatsAllowed && isColorUsed(color.id);
+          button.disabled =
+            state.status !== "playing" || (colorUsed && selectedColorId !== color.id);
           button.draggable = state.status === "playing" && allowDrag;
           if (selectedColorId === color.id) {
             button.classList.add("selected");
@@ -1315,7 +1472,7 @@
       }
 
       function clearGuess() {
-        state.currentGuess = Array(CODE_LENGTH).fill(null);
+        state.currentGuess = Array(activeGameType.codeLength).fill(null);
         renderAll();
         updateStatus();
       }
@@ -1334,13 +1491,13 @@
 
         statusLiveEl.textContent = `Black ${result.black}, White ${result.white}.`;
 
-        if (result.black === CODE_LENGTH) {
+        if (result.black === activeGameType.codeLength) {
           state.status = "won";
         } else if (state.attempts.length >= MAX_ATTEMPTS) {
           state.status = "lost";
         }
 
-        state.currentGuess = Array(CODE_LENGTH).fill(null);
+        state.currentGuess = Array(activeGameType.codeLength).fill(null);
         renderAll();
         updateStatus();
       }
@@ -1349,7 +1506,7 @@
         // State handling for a new game.
         state.secretCode = generateSecretCode();
         state.attempts = [];
-        state.currentGuess = Array(CODE_LENGTH).fill(null);
+        state.currentGuess = Array(activeGameType.codeLength).fill(null);
         state.status = "playing";
         selectedColorId = null;
         renderAll();
@@ -1406,13 +1563,20 @@
       submitBtn.addEventListener("click", submitGuess);
       clearBtn.addEventListener("click", clearGuess);
       newGameBtn.addEventListener("click", startNewGame);
+      gameTypeSelectEl.addEventListener("change", (event) => {
+        applyGameType(event.target.value);
+      });
       mobileSubmitBtn.addEventListener("click", submitGuess);
       mobileNewGameBtn.addEventListener("click", startNewGame);
+      mobileGameTypeSelectEl.addEventListener("change", (event) => {
+        applyGameType(event.target.value);
+      });
       window.addEventListener("resize", updateResponsiveLayout);
       window.addEventListener("orientationchange", updateResponsiveLayout);
 
       runFeedbackTests();
       renderRowNumbers();
+      initializeGameTypes();
       startNewGame();
       updateResponsiveLayout();
       updateDebugIndicator();
