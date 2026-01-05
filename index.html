@@ -396,22 +396,12 @@
       .mobile-current,
       .mobile-history,
       .mobile-palette {
-        margin-top: 16px;
+        margin-top: 12px;
       }
 
       .mobile-current-row {
         display: grid;
-        grid-template-columns: repeat(5, minmax(48px, 1fr));
-        gap: 10px;
-        padding: 14px;
-        border-radius: 20px;
-        background: rgba(255, 255, 255, 0.5);
-        box-shadow: inset 0 1px 3px rgba(94, 73, 43, 0.25);
-      }
-
-      .mobile-current-row .socket {
-        width: 52px;
-        height: 52px;
+        gap: 8px;
       }
 
       .mobile-history-list {
@@ -440,6 +430,11 @@
         max-width: 100%;
       }
 
+      .m-history__row--current {
+        box-shadow: 0 0 0 2px rgba(112, 84, 45, 0.45),
+          inset 0 1px 3px rgba(94, 73, 43, 0.25);
+      }
+
       .m-history__guess {
         display: flex;
         flex-wrap: nowrap;
@@ -464,12 +459,30 @@
         background: rgba(255, 255, 255, 0.5);
       }
 
+      .m-history__token--interactive {
+        cursor: pointer;
+      }
+
+      .m-history__token--interactive:focus-visible {
+        outline: 2px solid #7f5c2d;
+        outline-offset: 3px;
+      }
+
+      .m-history__token--ready {
+        box-shadow: 0 0 0 2px rgba(127, 92, 45, 0.35), 0 1px 2px rgba(58, 44, 24, 0.2);
+      }
+
       .m-history__feedback {
         display: flex;
         flex-wrap: wrap;
         gap: 4px;
         align-items: center;
         flex: 0 0 auto;
+      }
+
+      .m-history__feedback--placeholder {
+        min-width: 34px;
+        min-height: 14px;
       }
 
       .m-history__peg {
@@ -516,27 +529,52 @@
 
       .palette-mobile {
         grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
       }
 
       .palette-mobile .tray-peg {
-        min-height: 56px;
+        min-height: 48px;
+        padding: 6px;
       }
 
       .mobile-sticky {
         position: sticky;
         bottom: calc(8px + var(--safe-bottom));
-        margin-top: 20px;
-        padding: 14px;
+        margin-top: 12px;
+        padding: 12px;
         border-radius: 22px;
         background: linear-gradient(180deg, rgba(234, 216, 182, 0.95), rgba(215, 194, 154, 0.95));
         box-shadow: inset 0 2px 6px rgba(86, 66, 37, 0.3),
           0 12px 24px rgba(72, 56, 32, 0.18);
       }
 
+      .mobile-action-bar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .mobile-palette {
+        margin-top: 0;
+      }
+
+      .mobile-submit-column {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 120px;
+      }
+
+      .mobile-submit-column button {
+        width: 100%;
+        min-height: 44px;
+      }
+
       .mobile-controls {
         display: grid;
         gap: 10px;
-        margin-top: 12px;
+        margin-top: 10px;
       }
 
       .mobile-controls button {
@@ -666,6 +704,17 @@
         }
       }
 
+      @media (max-width: 340px) {
+        .mobile-action-bar {
+          grid-template-columns: 1fr;
+        }
+
+        .mobile-submit-column {
+          min-width: 0;
+          width: 100%;
+        }
+      }
+
       .condensed .attempt-row {
         padding: 8px 12px;
       }
@@ -754,12 +803,13 @@
         </div>
 
         <div class="mobile-sticky">
-        <div class="mobile-palette">
-          <div class="palette palette-mobile" id="palette-mobile"></div>
-        </div>
-
-          <div class="mobile-controls">
-            <button id="mobile-submit-guess" disabled>Submit Guess</button>
+          <div class="mobile-action-bar">
+            <div class="mobile-palette">
+              <div class="palette palette-mobile" id="palette-mobile"></div>
+            </div>
+            <div class="mobile-submit-column">
+              <button id="mobile-submit-guess" disabled>Submit Guess</button>
+            </div>
           </div>
         </div>
       </section>
@@ -1088,23 +1138,52 @@
 
       function renderMobileCurrentRow() {
         mobileCurrentRowEl.innerHTML = "";
+        const row = document.createElement("div");
+        row.className = "m-history__row m-history__row--current";
+
+        const guess = document.createElement("div");
+        guess.className = "m-history__guess";
+
         state.currentGuess.forEach((colorId, position) => {
-          const label = `Current attempt, position ${position + 1} socket`;
-          const socket = createSocket("large", label, state.status === "playing");
+          const token = document.createElement("div");
+          token.className = "m-history__token";
+          token.setAttribute(
+            "aria-label",
+            `Current attempt, position ${position + 1} token`
+          );
+
           if (colorId !== null) {
-            socket.appendChild(createPeg(COLORS[colorId].hex, "large"));
+            token.style.backgroundColor = COLORS[colorId].hex;
+          } else {
+            token.classList.add("m-history__token--empty");
           }
+
           if (state.status === "playing") {
-            socket.addEventListener("click", () => handleSocketPlacement(position));
-            socket.addEventListener("keydown", (event) => {
+            token.classList.add("m-history__token--interactive");
+            if (selectedColorId !== null) {
+              token.classList.add("m-history__token--ready");
+            }
+            token.setAttribute("role", "button");
+            token.tabIndex = 0;
+            token.addEventListener("click", () => handleSocketPlacement(position));
+            token.addEventListener("keydown", (event) => {
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
                 handleSocketPlacement(position);
               }
             });
           }
-          mobileCurrentRowEl.appendChild(socket);
+
+          guess.appendChild(token);
         });
+
+        const feedback = document.createElement("div");
+        feedback.className = "m-history__feedback m-history__feedback--placeholder";
+        feedback.setAttribute("aria-hidden", "true");
+
+        row.appendChild(guess);
+        row.appendChild(feedback);
+        mobileCurrentRowEl.appendChild(row);
       }
 
       function renderMobileHistory() {
