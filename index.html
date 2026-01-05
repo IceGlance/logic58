@@ -250,13 +250,67 @@
         align-items: center;
       }
 
-      .game-type-select {
+      .game-type-picker {
+        position: relative;
+      }
+
+      .game-type-trigger {
         border: 1px solid rgba(90, 67, 36, 0.35);
         border-radius: 12px;
         padding: 10px 12px;
         font-weight: 700;
         background: rgba(255, 255, 255, 0.7);
         color: #4a3b26;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .game-type-trigger:focus-visible {
+        outline: 2px solid #7f5c2d;
+        outline-offset: 2px;
+      }
+
+      .game-type-options {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        margin: 0;
+        padding: 6px;
+        list-style: none;
+        background: rgba(255, 255, 255, 0.96);
+        border-radius: 14px;
+        border: 1px solid rgba(90, 67, 36, 0.35);
+        box-shadow: 0 12px 20px rgba(80, 63, 34, 0.25);
+        display: none;
+        min-width: 220px;
+        z-index: 20;
+      }
+
+      .game-type-options[aria-hidden="false"] {
+        display: grid;
+        gap: 4px;
+      }
+
+      .game-type-option {
+        border: none;
+        background: transparent;
+        padding: 8px 10px;
+        border-radius: 10px;
+        text-align: left;
+        font-weight: 600;
+        color: #4a3b26;
+        cursor: pointer;
+      }
+
+      .game-type-option[aria-selected="true"] {
+        background: rgba(127, 92, 45, 0.18);
+      }
+
+      .game-type-option:focus-visible {
+        outline: 2px solid #7f5c2d;
+        outline-offset: 2px;
       }
 
       .status-plaques {
@@ -290,7 +344,7 @@
 
       .palette {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(var(--palette-columns, 4), 1fr);
         gap: 12px;
       }
 
@@ -555,7 +609,7 @@
       }
 
       .palette-mobile {
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(var(--palette-columns, 4), 1fr);
         gap: 8px;
       }
 
@@ -577,7 +631,7 @@
 
       .mobile-action-bar {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(84px, 110px);
+        grid-template-columns: minmax(0, 1fr) 64px;
         gap: 12px;
         align-items: center;
       }
@@ -590,17 +644,34 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        min-width: 84px;
-        max-width: 110px;
+        min-width: 64px;
+        max-width: 64px;
         width: 100%;
       }
 
       .mobile-submit-column button {
         width: 100%;
         min-height: 44px;
-        text-transform: uppercase;
-        line-height: 1.1;
-        white-space: normal;
+        padding: 0;
+      }
+
+      .icon-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        min-height: 44px;
+        width: 56px;
+        height: 56px;
+        padding: 0;
+      }
+
+      .icon-button svg {
+        width: 24px;
+        height: 24px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2.5;
       }
 
       .mobile-controls {
@@ -794,10 +865,25 @@
 
             <div class="game-config">
               <button class="secondary" id="new-game">New Game</button>
-              <label>
-                <span class="sr-only">Game Type</span>
-                <select id="game-type-select" class="game-type-select"></select>
-              </label>
+              <div class="game-type-picker" id="game-type-picker">
+                <span class="sr-only" id="game-type-label">Game Type</span>
+                <button
+                  type="button"
+                  class="game-type-trigger"
+                  id="game-type-trigger"
+                  aria-labelledby="game-type-label game-type-trigger-label"
+                  aria-haspopup="listbox"
+                  aria-expanded="false"
+                >
+                  <span id="game-type-trigger-label">4/6 On</span>
+                </button>
+                <ul
+                  class="game-type-options"
+                  id="game-type-options"
+                  role="listbox"
+                  aria-hidden="true"
+                ></ul>
+              </div>
             </div>
 
             <div class="tray">
@@ -806,7 +892,11 @@
             </div>
 
             <div class="board-controls">
-              <button id="submit-guess" disabled>Submit Guess</button>
+              <button id="submit-guess" class="icon-button" aria-label="Submit guess" title="Submit" disabled>
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M5 12l4 4L19 6" />
+                </svg>
+              </button>
               <button class="secondary" id="clear-guess">Clear Row</button>
             </div>
 
@@ -827,10 +917,25 @@
           </div>
           <div class="mobile-controls-row">
             <button class="mobile-new-game" id="mobile-new-game">New Game</button>
-            <label>
-              <span class="sr-only">Game Type</span>
-              <select id="mobile-game-type-select" class="game-type-select"></select>
-            </label>
+            <div class="game-type-picker" id="mobile-game-type-picker">
+              <span class="sr-only" id="mobile-game-type-label">Game Type</span>
+              <button
+                type="button"
+                class="game-type-trigger"
+                id="mobile-game-type-trigger"
+                aria-labelledby="mobile-game-type-label mobile-game-type-trigger-label"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+              >
+                <span id="mobile-game-type-trigger-label">4/6 On</span>
+              </button>
+              <ul
+                class="game-type-options"
+                id="mobile-game-type-options"
+                role="listbox"
+                aria-hidden="true"
+              ></ul>
+            </div>
           </div>
         </div>
 
@@ -853,7 +958,17 @@
               <div class="palette palette-mobile" id="palette-mobile"></div>
             </div>
             <div class="mobile-submit-column">
-              <button id="mobile-submit-guess" disabled>SUBMIT<br />GUESS</button>
+              <button
+                id="mobile-submit-guess"
+                class="icon-button"
+                aria-label="Submit guess"
+                title="Submit"
+                disabled
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M5 12l4 4L19 6" />
+                </svg>
+              </button>
             </div>
           </div>
         </div>
@@ -916,11 +1031,17 @@
       const submitBtn = document.getElementById("submit-guess");
       const clearBtn = document.getElementById("clear-guess");
       const newGameBtn = document.getElementById("new-game");
-      const gameTypeSelectEl = document.getElementById("game-type-select");
+      const gameTypePickerEl = document.getElementById("game-type-picker");
+      const gameTypeTriggerEl = document.getElementById("game-type-trigger");
+      const gameTypeTriggerLabelEl = document.getElementById("game-type-trigger-label");
+      const gameTypeOptionsEl = document.getElementById("game-type-options");
       const mobileAttemptCounterEl = document.getElementById("mobile-attempt-counter");
       const mobileStatusEl = document.getElementById("mobile-game-status");
       const mobileNewGameBtn = document.getElementById("mobile-new-game");
-      const mobileGameTypeSelectEl = document.getElementById("mobile-game-type-select");
+      const mobileGameTypePickerEl = document.getElementById("mobile-game-type-picker");
+      const mobileGameTypeTriggerEl = document.getElementById("mobile-game-type-trigger");
+      const mobileGameTypeTriggerLabelEl = document.getElementById("mobile-game-type-trigger-label");
+      const mobileGameTypeOptionsEl = document.getElementById("mobile-game-type-options");
       const mobileSubmitBtn = document.getElementById("mobile-submit-guess");
       const mobileCurrentRowEl = document.getElementById("mobile-current-row");
       const mobileHistoryListEl = document.getElementById("mobile-history-list");
@@ -1034,13 +1155,67 @@
         const feedbackRows = Math.ceil(activeGameType.codeLength / feedbackColumns);
         document.documentElement.style.setProperty("--feedback-columns", feedbackColumns);
         document.documentElement.style.setProperty("--feedback-rows", feedbackRows);
+        const paletteColumns = activeGameType.paletteSize === 6 ? 3 : 4;
+        document.documentElement.style.setProperty("--palette-columns", paletteColumns);
       }
 
-      function syncGameTypeSelects(gameTypeId) {
-        [gameTypeSelectEl, mobileGameTypeSelectEl].forEach((selectEl) => {
-          if (selectEl) {
-            selectEl.value = gameTypeId;
+      const gameTypePickers = [
+        {
+          container: gameTypePickerEl,
+          trigger: gameTypeTriggerEl,
+          label: gameTypeTriggerLabelEl,
+          options: gameTypeOptionsEl,
+        },
+        {
+          container: mobileGameTypePickerEl,
+          trigger: mobileGameTypeTriggerEl,
+          label: mobileGameTypeTriggerLabelEl,
+          options: mobileGameTypeOptionsEl,
+        },
+      ];
+
+      function formatCompactGameTypeLabel(type) {
+        return `${type.codeLength}/${type.paletteSize} ${type.repeatsAllowed ? "On" : "Off"}`;
+      }
+
+      function setGameTypePickerOpen(picker, shouldOpen) {
+        picker.trigger.setAttribute("aria-expanded", shouldOpen.toString());
+        picker.options.setAttribute("aria-hidden", (!shouldOpen).toString());
+        if (shouldOpen) {
+          const selectedOption = picker.options.querySelector(
+            `[data-game-type-id="${activeGameType.id}"]`
+          );
+          const focusTarget = selectedOption || picker.options.querySelector(".game-type-option");
+          if (focusTarget) {
+            focusTarget.focus();
           }
+        }
+      }
+
+      function closeAllGameTypePickers() {
+        gameTypePickers.forEach((picker) => {
+          if (!picker.trigger || !picker.options) {
+            return;
+          }
+          setGameTypePickerOpen(picker, false);
+        });
+      }
+
+      function syncGameTypePickers(gameTypeId) {
+        const selectedType = getGameTypeById(gameTypeId);
+        if (!selectedType) {
+          return;
+        }
+        gameTypePickers.forEach((picker) => {
+          if (!picker.trigger || !picker.label || !picker.options) {
+            return;
+          }
+          picker.label.textContent = formatCompactGameTypeLabel(selectedType);
+          picker.options.querySelectorAll(".game-type-option").forEach((optionEl) => {
+            const isSelected = optionEl.dataset.gameTypeId === gameTypeId;
+            optionEl.setAttribute("aria-selected", isSelected.toString());
+            optionEl.tabIndex = isSelected ? 0 : -1;
+          });
         });
       }
 
@@ -1051,7 +1226,7 @@
         }
         activeGameType = nextType;
         updateLayoutVariables();
-        syncGameTypeSelects(gameTypeId);
+        syncGameTypePickers(gameTypeId);
         if (persist) {
           localStorage.setItem(GAME_TYPE_STORAGE_KEY, gameTypeId);
         }
@@ -1061,22 +1236,26 @@
         }
       }
 
-      function buildGameTypeOptions(selectEl) {
-        if (!selectEl) {
+      function buildGameTypeOptions(optionsEl) {
+        if (!optionsEl) {
           return;
         }
-        selectEl.innerHTML = "";
+        optionsEl.innerHTML = "";
         GAME_TYPES.forEach((type) => {
-          const option = document.createElement("option");
-          option.value = type.id;
+          const option = document.createElement("button");
+          option.type = "button";
+          option.className = "game-type-option";
+          option.setAttribute("role", "option");
+          option.setAttribute("aria-selected", "false");
+          option.dataset.gameTypeId = type.id;
           option.textContent = type.label;
-          selectEl.appendChild(option);
+          optionsEl.appendChild(option);
         });
       }
 
       function initializeGameTypes() {
-        buildGameTypeOptions(gameTypeSelectEl);
-        buildGameTypeOptions(mobileGameTypeSelectEl);
+        buildGameTypeOptions(gameTypeOptionsEl);
+        buildGameTypeOptions(mobileGameTypeOptionsEl);
         const storedGameTypeId = localStorage.getItem(GAME_TYPE_STORAGE_KEY);
         const initialGameTypeId = getGameTypeById(storedGameTypeId)
           ? storedGameTypeId
@@ -1560,16 +1739,94 @@
         updateDebugIndicator();
       }
 
+      function getGameTypeOptions(picker) {
+        return Array.from(picker.options.querySelectorAll(".game-type-option"));
+      }
+
+      function focusGameTypeOption(picker, index) {
+        const options = getGameTypeOptions(picker);
+        if (options.length === 0) {
+          return;
+        }
+        const clampedIndex = Math.min(options.length - 1, Math.max(0, index));
+        options[clampedIndex].focus();
+      }
+
+      function handleGameTypeOptionSelection(picker, gameTypeId) {
+        applyGameType(gameTypeId);
+        closeAllGameTypePickers();
+        picker.trigger.focus();
+      }
+
+      function bindGameTypePickerEvents(picker) {
+        if (!picker.trigger || !picker.options || !picker.container) {
+          return;
+        }
+
+        picker.trigger.addEventListener("click", () => {
+          const isOpen = picker.trigger.getAttribute("aria-expanded") === "true";
+          closeAllGameTypePickers();
+          setGameTypePickerOpen(picker, !isOpen);
+        });
+
+        picker.trigger.addEventListener("keydown", (event) => {
+          if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            closeAllGameTypePickers();
+            setGameTypePickerOpen(picker, true);
+          }
+        });
+
+        picker.options.addEventListener("click", (event) => {
+          const option = event.target.closest(".game-type-option");
+          if (!option) {
+            return;
+          }
+          handleGameTypeOptionSelection(picker, option.dataset.gameTypeId);
+        });
+
+        picker.options.addEventListener("keydown", (event) => {
+          const options = getGameTypeOptions(picker);
+          const currentIndex = options.indexOf(document.activeElement);
+          if (event.key === "ArrowDown") {
+            event.preventDefault();
+            focusGameTypeOption(picker, currentIndex + 1);
+          } else if (event.key === "ArrowUp") {
+            event.preventDefault();
+            focusGameTypeOption(picker, currentIndex - 1);
+          } else if (event.key === "Home") {
+            event.preventDefault();
+            focusGameTypeOption(picker, 0);
+          } else if (event.key === "End") {
+            event.preventDefault();
+            focusGameTypeOption(picker, options.length - 1);
+          } else if (event.key === "Escape") {
+            event.preventDefault();
+            closeAllGameTypePickers();
+            picker.trigger.focus();
+          } else if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            const option = document.activeElement;
+            if (option && option.classList.contains("game-type-option")) {
+              handleGameTypeOptionSelection(picker, option.dataset.gameTypeId);
+            }
+          }
+        });
+      }
+
       submitBtn.addEventListener("click", submitGuess);
       clearBtn.addEventListener("click", clearGuess);
       newGameBtn.addEventListener("click", startNewGame);
-      gameTypeSelectEl.addEventListener("change", (event) => {
-        applyGameType(event.target.value);
-      });
       mobileSubmitBtn.addEventListener("click", submitGuess);
       mobileNewGameBtn.addEventListener("click", startNewGame);
-      mobileGameTypeSelectEl.addEventListener("change", (event) => {
-        applyGameType(event.target.value);
+      gameTypePickers.forEach((picker) => bindGameTypePickerEvents(picker));
+      document.addEventListener("click", (event) => {
+        const isInsidePicker = gameTypePickers.some(
+          (picker) => picker.container && picker.container.contains(event.target)
+        );
+        if (!isInsidePicker) {
+          closeAllGameTypePickers();
+        }
       });
       window.addEventListener("resize", updateResponsiveLayout);
       window.addEventListener("orientationchange", updateResponsiveLayout);
