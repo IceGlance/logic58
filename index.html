@@ -878,11 +878,13 @@
 
           <aside class="controls-panel">
             <div class="status-plaques">
-              <div class="plaque" id="status-summary">Playing • 1 / 12</div>
+              <div class="plaque" id="status-summary">Playing • 1 / 12 • 00</div>
             </div>
 
             <div class="game-config">
-              <button class="secondary" id="new-game">New Game</button>
+              <button class="secondary" id="new-game" aria-label="New Game" title="New Game">
+                New
+              </button>
               <div class="game-type-picker" id="game-type-picker">
                 <span class="sr-only" id="game-type-label">Game Type</span>
                 <button
@@ -930,10 +932,17 @@
       <section class="mobile-layout" aria-label="Logic mobile board">
           <div class="mobile-status">
             <div class="mobile-status-text">
-              <div class="mobile-status-summary" id="mobile-status-summary">Playing • 1 / 12</div>
+              <div class="mobile-status-summary" id="mobile-status-summary">Playing • 1 / 12 • 00</div>
             </div>
           <div class="mobile-controls-row">
-            <button class="mobile-new-game" id="mobile-new-game">New Game</button>
+            <button
+              class="mobile-new-game"
+              id="mobile-new-game"
+              aria-label="New Game"
+              title="New Game"
+            >
+              New
+            </button>
             <div class="game-type-picker" id="mobile-game-type-picker">
               <span class="sr-only" id="mobile-game-type-label">Game Type</span>
               <button
@@ -1059,11 +1068,15 @@
         attempts: [],
         currentGuess: [],
         status: "playing",
+        gameStartTsMs: 0,
+        gameEndTsMs: null,
+        elapsedSec: 0,
       };
 
       let selectedColorId = null;
       let activeGameType =
         GAME_TYPES.find((type) => type.id === DEFAULT_GAME_TYPE_ID) || GAME_TYPES[0];
+      let timerIntervalId = null;
 
       const attemptRowsEl = document.getElementById("attempt-rows");
       const paletteDesktopEl = document.getElementById("palette-desktop");
@@ -1340,6 +1353,52 @@
             console.info(message);
           }
         }
+      }
+
+      function formatElapsedTime(elapsedSec) {
+        if (elapsedSec < 60) {
+          return String(elapsedSec).padStart(2, "0");
+        }
+        const seconds = elapsedSec % 60;
+        const minutesTotal = Math.floor(elapsedSec / 60);
+        if (elapsedSec < 3600) {
+          return `${String(minutesTotal).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+        }
+        const hours = Math.floor(minutesTotal / 60);
+        const minutes = minutesTotal % 60;
+        return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(
+          seconds
+        ).padStart(2, "0")}`;
+      }
+
+      function updateElapsedTime() {
+        if (state.status === "playing") {
+          state.elapsedSec = Math.floor((Date.now() - state.gameStartTsMs) / 1000);
+        } else if (state.gameEndTsMs !== null) {
+          state.elapsedSec = Math.floor((state.gameEndTsMs - state.gameStartTsMs) / 1000);
+        }
+      }
+
+      function stopGameTimer() {
+        if (timerIntervalId !== null) {
+          clearInterval(timerIntervalId);
+          timerIntervalId = null;
+        }
+      }
+
+      function startGameTimer() {
+        stopGameTimer();
+        state.gameStartTsMs = Date.now();
+        state.gameEndTsMs = null;
+        state.elapsedSec = 0;
+        timerIntervalId = setInterval(() => {
+          if (state.status !== "playing") {
+            stopGameTimer();
+            return;
+          }
+          updateElapsedTime();
+          updateStatus();
+        }, 1000);
       }
 
       function renderSecretCode() {
@@ -1669,10 +1728,13 @@
       }
 
       function updateStatus() {
+        updateElapsedTime();
         const attemptNumber =
           state.status === "playing" ? state.attempts.length + 1 : state.attempts.length;
         const statusLabel = `${state.status.charAt(0).toUpperCase()}${state.status.slice(1)}`;
-        const summaryText = `${statusLabel} • ${attemptNumber} / ${activeGameType.maxAttempts}`;
+        const summaryText = `${statusLabel} • ${attemptNumber} / ${activeGameType.maxAttempts} • ${formatElapsedTime(
+          state.elapsedSec
+        )}`;
         statusSummaryEl.textContent = summaryText;
         mobileStatusSummaryEl.textContent = summaryText;
         submitBtn.disabled =
@@ -1712,6 +1774,11 @@
         } else if (state.attempts.length >= activeGameType.maxAttempts) {
           state.status = "lost";
         }
+        if (state.status !== "playing") {
+          state.gameEndTsMs = Date.now();
+          updateElapsedTime();
+          stopGameTimer();
+        }
 
         state.currentGuess = Array(activeGameType.codeLength).fill(null);
         renderAll();
@@ -1725,6 +1792,7 @@
         state.currentGuess = Array(activeGameType.codeLength).fill(null);
         state.status = "playing";
         selectedColorId = null;
+        startGameTimer();
         renderAll();
         updateStatus();
       }
