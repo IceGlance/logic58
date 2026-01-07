@@ -295,6 +295,35 @@
         gap: 4px;
       }
 
+      .help-button {
+        width: 30px;
+        height: 30px;
+        border-radius: 999px;
+        border: 1px solid rgba(90, 67, 36, 0.35);
+        background: rgba(255, 255, 255, 0.75);
+        color: #4a3b26;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+      }
+
+      .help-button:hover {
+        background: rgba(255, 255, 255, 0.9);
+      }
+
+      .help-button:active {
+        transform: translateY(1px);
+      }
+
+      .help-button:focus-visible {
+        outline: 2px solid #7f5c2d;
+        outline-offset: 2px;
+      }
+
       .game-type-option {
         border: none;
         background: transparent;
@@ -733,6 +762,97 @@
         z-index: 1000;
       }
 
+      .rules-modal {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(46, 35, 20, 0.55);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+        z-index: 900;
+        padding: 24px;
+      }
+
+      .rules-modal[data-open="true"] {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .rules-modal__dialog {
+        width: min(700px, 100%);
+        max-height: 90vh;
+        background: #fef7e6;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(36, 26, 12, 0.35);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .rules-modal__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 22px;
+        border-bottom: 1px solid rgba(90, 67, 36, 0.15);
+        background: rgba(234, 216, 182, 0.6);
+      }
+
+      .rules-modal__title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin: 0;
+      }
+
+      .rules-modal__close {
+        border: none;
+        background: transparent;
+        font-size: 1.4rem;
+        line-height: 1;
+        cursor: pointer;
+        color: #4a3b26;
+        padding: 4px;
+      }
+
+      .rules-modal__body {
+        padding: 18px 22px 8px;
+        overflow-y: auto;
+        font-size: 0.95rem;
+        line-height: 1.5;
+      }
+
+      .rules-modal__body h3 {
+        margin: 16px 0 8px;
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .rules-modal__body ul {
+        margin: 8px 0 0 18px;
+        padding: 0;
+      }
+
+      .rules-modal__footer {
+        padding: 16px 22px 20px;
+        border-top: 1px solid rgba(90, 67, 36, 0.1);
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      .rules-modal__footer button {
+        padding: 10px 16px;
+        border-radius: 12px;
+        border: none;
+        font-weight: 700;
+        background: #7f5c2d;
+        color: #fef7e6;
+        cursor: pointer;
+      }
+
       @media (max-width: 900px) {
         body {
           padding: 16px;
@@ -777,6 +897,14 @@
 
         .board-playfield {
           order: 1;
+        }
+
+        .rules-modal {
+          padding: 16px;
+        }
+
+        .rules-modal__body {
+          font-size: 1rem;
         }
       }
 
@@ -904,6 +1032,15 @@
                   aria-hidden="true"
                 ></ul>
               </div>
+              <button
+                class="help-button"
+                type="button"
+                aria-label="Game rules"
+                title="Rules"
+                data-open-rules
+              >
+                ?
+              </button>
             </div>
 
             <div class="tray">
@@ -962,6 +1099,15 @@
                 aria-hidden="true"
               ></ul>
             </div>
+            <button
+              class="help-button"
+              type="button"
+              aria-label="Game rules"
+              title="Rules"
+              data-open-rules
+            >
+              ?
+            </button>
           </div>
         </div>
 
@@ -1004,6 +1150,79 @@
     <div id="debug-indicator" class="debug-indicator" hidden></div>
 
     <div id="status-live" class="sr-only" aria-live="polite"></div>
+
+    <div
+      class="rules-modal"
+      id="rules-modal"
+      data-open="false"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="rules-modal-title"
+    >
+      <div class="rules-modal__dialog" role="document">
+        <div class="rules-modal__header">
+          <h2 class="rules-modal__title" id="rules-modal-title">How to Play</h2>
+          <button class="rules-modal__close" type="button" aria-label="Close rules" data-close-rules>
+            ×
+          </button>
+        </div>
+        <div class="rules-modal__body">
+          <p>
+            The goal of the game is to guess a hidden color code in a limited number of
+            attempts.
+          </p>
+
+          <h3>Game Setup</h3>
+          <ul>
+            <li>The computer generates a secret code.</li>
+            <li>The code consists of 4 or 5 colors, depending on the selected game type.</li>
+            <li>Colors are chosen from a palette of 6 or 8 colors.</li>
+            <li>Depending on the mode, colors may repeat or must be unique.</li>
+            <li>Empty positions are not allowed.</li>
+          </ul>
+
+          <h3>Your Task</h3>
+          <ul>
+            <li>Try to guess the secret code in as few attempts as possible.</li>
+            <li>The maximum number of attempts depends on the game type:</li>
+            <li>4 / 6 modes: 6 attempts</li>
+            <li>5 / 8 modes: 12 attempts</li>
+          </ul>
+
+          <h3>Making a Guess</h3>
+          <ul>
+            <li>Select a color from the palette.</li>
+            <li>Tap a position in the current row to place the color.</li>
+            <li>To change a color, simply place another color in the same position.</li>
+            <li>When all positions are filled, submit the guess.</li>
+          </ul>
+
+          <h3>Feedback</h3>
+          <p>After each guess, you receive feedback:</p>
+          <ul>
+            <li>Black peg — correct color in the correct position.</li>
+            <li>White peg — correct color in the wrong position.</li>
+            <li>The order of feedback pegs does not matter.</li>
+            <li>The total number of black and white pegs never exceeds the code length.</li>
+          </ul>
+
+          <h3>Winning and Losing</h3>
+          <ul>
+            <li>You win if all positions are correct (all black pegs).</li>
+            <li>You lose if you use all attempts without guessing the code.</li>
+          </ul>
+
+          <h3>Timer</h3>
+          <ul>
+            <li>The timer shows how long the current game lasts.</li>
+            <li>It starts with a new game and stops when the game ends.</li>
+          </ul>
+        </div>
+        <div class="rules-modal__footer">
+          <button type="button" data-close-rules>Close</button>
+        </div>
+      </div>
+    </div>
 
     <script>
       /*
@@ -1107,6 +1326,9 @@
       const boardPlayfieldEl = document.getElementById("board-playfield");
       const boardFrameEl = document.querySelector(".board-frame");
       const debugIndicatorEl = document.getElementById("debug-indicator");
+      const rulesModalEl = document.getElementById("rules-modal");
+      const rulesOpenButtons = document.querySelectorAll("[data-open-rules]");
+      const rulesCloseButtons = document.querySelectorAll("[data-close-rules]");
 
       function getGameTypeById(gameTypeId) {
         return GAME_TYPES.find((type) => type.id === gameTypeId) || null;
@@ -1844,6 +2066,14 @@
         updateDebugIndicator();
       }
 
+      function openRulesModal() {
+        rulesModalEl.setAttribute("data-open", "true");
+      }
+
+      function closeRulesModal() {
+        rulesModalEl.setAttribute("data-open", "false");
+      }
+
       function getGameTypeOptions(picker) {
         return Array.from(picker.options.querySelectorAll(".game-type-option"));
       }
@@ -1925,12 +2155,28 @@
       mobileSubmitBtn.addEventListener("click", submitGuess);
       mobileNewGameBtn.addEventListener("click", startNewGame);
       gameTypePickers.forEach((picker) => bindGameTypePickerEvents(picker));
+      rulesOpenButtons.forEach((button) => {
+        button.addEventListener("click", openRulesModal);
+      });
+      rulesCloseButtons.forEach((button) => {
+        button.addEventListener("click", closeRulesModal);
+      });
+      rulesModalEl.addEventListener("click", (event) => {
+        if (event.target === rulesModalEl) {
+          closeRulesModal();
+        }
+      });
       document.addEventListener("click", (event) => {
         const isInsidePicker = gameTypePickers.some(
           (picker) => picker.container && picker.container.contains(event.target)
         );
         if (!isInsidePicker) {
           closeAllGameTypePickers();
+        }
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && rulesModalEl.getAttribute("data-open") === "true") {
+          closeRulesModal();
         }
       });
       window.addEventListener("resize", updateResponsiveLayout);
