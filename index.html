@@ -187,6 +187,33 @@
         position: relative;
       }
 
+      .socket.cleared::after {
+        content: "";
+        position: absolute;
+        inset: -5px;
+        border-radius: 50%;
+        background: rgba(127, 92, 45, 0.25);
+        box-shadow: 0 0 12px rgba(127, 92, 45, 0.35);
+        opacity: 0;
+        animation: cleared-flash 0.6s ease;
+        pointer-events: none;
+      }
+
+      @keyframes cleared-flash {
+        0% {
+          opacity: 0;
+          transform: scale(0.9);
+        }
+        30% {
+          opacity: 0.75;
+          transform: scale(1);
+        }
+        100% {
+          opacity: 0;
+          transform: scale(1.12);
+        }
+      }
+
       .socket.large {
         width: var(--socket-size);
         height: var(--socket-size);
@@ -582,6 +609,19 @@
         border: 1px solid rgba(0, 0, 0, 0.15);
         box-shadow: 0 1px 2px rgba(58, 44, 24, 0.2);
         flex: 0 0 auto;
+        position: relative;
+      }
+
+      .m-history__token.cleared::after {
+        content: "";
+        position: absolute;
+        inset: -4px;
+        border-radius: 999px;
+        background: rgba(127, 92, 45, 0.2);
+        box-shadow: 0 0 10px rgba(127, 92, 45, 0.35);
+        opacity: 0;
+        animation: cleared-flash 0.6s ease;
+        pointer-events: none;
       }
 
       .m-history__token--empty {
@@ -1296,6 +1336,7 @@
       const DEBUG_UI = window.location.search.includes("debug=1");
       const GAME_TYPE_STORAGE_KEY = "logic.gameType";
       const DEFAULT_GAME_TYPE_ID = "L5_C8_R1";
+      const CLEAR_ANIMATION_MS = 650;
 
       const state = {
         secretCode: [],
@@ -1305,6 +1346,7 @@
         gameStartTsMs: 0,
         gameEndTsMs: null,
         elapsedSec: 0,
+        clearedSlots: [],
       };
 
       let selectedColorId = null;
@@ -1686,16 +1728,33 @@
         );
       }
 
+      function registerClearedSlot(position) {
+        const now = Date.now();
+        state.clearedSlots = state.clearedSlots.filter(
+          (entry) => now - entry.timestamp < CLEAR_ANIMATION_MS
+        );
+        state.clearedSlots.push({ position, timestamp: now });
+      }
+
+      function shouldHighlightClearedSlot(position) {
+        const now = Date.now();
+        return state.clearedSlots.some(
+          (entry) => entry.position === position && now - entry.timestamp < CLEAR_ANIMATION_MS
+        );
+      }
+
       function setCurrentGuessAt(position, colorId) {
         if (state.status !== "playing") {
           return;
         }
-        if (
-          colorId !== null &&
-          !activeGameType.repeatsAllowed &&
-          isColorUsed(colorId, position)
-        ) {
-          return;
+        if (colorId !== null && !activeGameType.repeatsAllowed) {
+          const existingIndex = state.currentGuess.findIndex(
+            (guessColor, index) => guessColor === colorId && index !== position
+          );
+          if (existingIndex !== -1) {
+            state.currentGuess[existingIndex] = null;
+            registerClearedSlot(existingIndex);
+          }
         }
         state.currentGuess[position] = colorId;
       }
@@ -1741,6 +1800,10 @@
 
             if (colorId !== null) {
               socket.appendChild(createPeg(BASE_COLORS[colorId].hex, "large"));
+            }
+
+            if (interactive && shouldHighlightClearedSlot(position)) {
+              socket.classList.add("cleared");
             }
 
             if (interactive) {
@@ -1829,6 +1892,10 @@
             token.classList.add("m-history__token--empty");
           }
 
+          if (shouldHighlightClearedSlot(position)) {
+            token.classList.add("cleared");
+          }
+
           if (state.status === "playing") {
             token.classList.add("m-history__token--interactive");
             if (selectedColorId !== null) {
@@ -1915,9 +1982,7 @@
           button.className = "tray-peg";
           button.setAttribute("aria-label", color.name);
           button.title = color.name;
-          const colorUsed = !activeGameType.repeatsAllowed && isColorUsed(color.id);
-          button.disabled =
-            state.status !== "playing" || (colorUsed && selectedColorId !== color.id);
+          button.disabled = state.status !== "playing";
           button.draggable = state.status === "playing" && allowDrag;
           if (selectedColorId === color.id) {
             button.classList.add("selected");
@@ -1985,6 +2050,7 @@
 
       function clearGuess() {
         state.currentGuess = Array(activeGameType.codeLength).fill(null);
+        state.clearedSlots = [];
         renderAll();
         updateStatus();
       }
@@ -2015,6 +2081,7 @@
         }
 
         state.currentGuess = Array(activeGameType.codeLength).fill(null);
+        state.clearedSlots = [];
         renderAll();
         updateStatus();
       }
@@ -2025,6 +2092,7 @@
         state.attempts = [];
         state.currentGuess = Array(activeGameType.codeLength).fill(null);
         state.status = "playing";
+        state.clearedSlots = [];
         selectedColorId = null;
         startGameTimer();
         renderAll();
