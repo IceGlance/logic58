@@ -257,13 +257,15 @@
       .game-type-trigger {
         border: 1px solid rgba(90, 67, 36, 0.35);
         border-radius: 12px;
-        padding: 10px 12px;
+        padding: 6px 8px;
+        min-width: 40px;
         font-weight: 700;
         background: rgba(255, 255, 255, 0.7);
         color: #4a3b26;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
+        justify-content: center;
         gap: 8px;
       }
 
@@ -296,19 +298,28 @@
       }
 
       .help-button {
-        width: 30px;
-        height: 30px;
+        width: 20px;
+        height: 20px;
         border-radius: 999px;
         border: 1px solid rgba(90, 67, 36, 0.35);
         background: rgba(255, 255, 255, 0.75);
         color: #4a3b26;
         font-weight: 700;
+        font-size: 0.75rem;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
         padding: 0;
         line-height: 1;
+        position: relative;
+      }
+
+      .help-button::before {
+        content: "";
+        position: absolute;
+        inset: -6px;
+        border-radius: 50%;
       }
 
       .help-button:hover {
@@ -482,7 +493,7 @@
       .mobile-new-game {
         border: none;
         border-radius: 14px;
-        padding: 10px 14px;
+        padding: 10px 10px;
         font-weight: 700;
         background: #7f5c2d;
         color: #fef7e6;
@@ -497,6 +508,10 @@
         gap: 8px;
         align-items: center;
         justify-content: flex-end;
+      }
+
+      #new-game {
+        padding: 6px 10px;
       }
 
       .mobile-section-title {
@@ -1578,9 +1593,6 @@
       }
 
       function formatElapsedTime(elapsedSec) {
-        if (elapsedSec < 60) {
-          return String(elapsedSec).padStart(2, "0");
-        }
         const seconds = elapsedSec % 60;
         const minutesTotal = Math.floor(elapsedSec / 60);
         if (elapsedSec < 3600) {
